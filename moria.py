@@ -1,6 +1,8 @@
 import pgzrun
 from random import randint
 from random import randrange
+import pygame
+
 
 COLS = 10
 ROWS = 10
@@ -8,7 +10,7 @@ PIXEL_WIDTH_PER_CELL = 50
 PIXEL_HEIGHT_PER_CELL = 50
 HEIGHT = 1000
 WIDTH = 1000
-OFFSET_DERECHA = (PIXEL_WIDTH_PER_CELL * 0.5 , -PIXEL_HEIGHT_PER_CELL * 0.5);
+OFFSET_DERECHA = (PIXEL_WIDTH_PER_CELL * 0.5 , -PIXEL_HEIGHT_PER_CELL * 0.5)
 OFFSET_ABAJO = (0, 0)
 OFFSET_ARRIBA = (0, -PIXEL_HEIGHT_PER_CELL)
 OFFSET_IZQUIERDA= (-PIXEL_WIDTH_PER_CELL*0.5, -PIXEL_HEIGHT_PER_CELL * 0.5)
@@ -29,11 +31,13 @@ hart.y = 850
 puerta_abajo = Actor('escaleras-abajo1')
 puerta_arriba = Actor('escaleras-arriba')
 
+
 mapa = Rect(0, 0, COLS * PIXEL_WIDTH_PER_CELL, ROWS * PIXEL_HEIGHT_PER_CELL)
 mapa.move_ip(X_LEFT, Y_TOP)
 current_floor_indicatorbox = Rect(0, 0, 200, 100)
 current_floor_indicatorbox.move_ip(400, 100)
 current_cell_indicatorbox = Rect(0, 0, 200, 100)
+
 current_cell_indicatorbox.move_ip(100, 100)
 
 def draw():
@@ -53,7 +57,6 @@ def draw_matrix(matrix):
                 current_cell.move_ip(X_LEFT+i*PIXEL_WIDTH_PER_CELL, Y_TOP + j * PIXEL_HEIGHT_PER_CELL)
                 screen.draw.textbox(str(matrix[i][j]), current_cell, color=('black'))
             else:
-                matrix[i][j].move_ip(X_LEFT+i*PIXEL_WIDTH_PER_CELL, Y_TOP + j * PIXEL_HEIGHT_PER_CELL)
                 matrix[i][j].draw()            
             
         
@@ -110,12 +113,37 @@ def on_key_down(key):
 
     return
 
+
+def generate_downdoor(m):
+    r = randrange(9)
+    c = randrange(9)
+
+    m[r][c] = puerta_abajo
+    puerta_abajo._surf = pygame.transform.scale(puerta_abajo._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL))
+
+
+    puerta_abajo.move_ip(X_LEFT+r*PIXEL_WIDTH_PER_CELL, Y_TOP + c * PIXEL_HEIGHT_PER_CELL)
+
+def generate_updoor(a):
+    r = randrange(9)
+    c = randrange(9)
+
+    puerta_arriba._surf = pygame.transform.scale(puerta_arriba._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL)) 
+    puerta_arriba.move_ip(X_LEFT+r*PIXEL_WIDTH_PER_CELL, Y_TOP + c * PIXEL_HEIGHT_PER_CELL) 
+
+    a[r][c] = puerta_arriba
+
 def generate_map(rows, cols):
     Matrix = [[' ' for x in range(cols)] for y in range(rows)]
 
-    Matrix[randrange(9)][randrange(9)] = puerta_abajo
-    
+    generate_downdoor(Matrix)
+    generate_updoor(Matrix)
+        
     return Matrix
+
+# def new_floor():
+#     if player.collidepoint(puerta_abajo):
+#     pass
     
 
 
