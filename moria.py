@@ -17,6 +17,8 @@ OFFSET_IZQUIERDA= (-PIXEL_WIDTH_PER_CELL*0.5, -PIXEL_HEIGHT_PER_CELL * 0.5)
 X_LEFT = (WIDTH - COLS * PIXEL_WIDTH_PER_CELL) / 2
 Y_TOP = ( HEIGHT - ROWS * PIXEL_HEIGHT_PER_CELL) / 2
 
+
+
 current_floor = 1
 level = current_floor
 max_hp = 8
@@ -24,12 +26,23 @@ player = Actor('guerrero-izqiureda4')
 player.col = 1
 player.row = 1
 player.offset = OFFSET_IZQUIERDA
+
 hart = Actor('corazon')
-hart.pos = hart.x, hart.y
-hart.x = 300
-hart.y = 850
-puerta_abajo = Actor('escaleras-abajo1')
+hart.col = 300
+hart.row = 850
+hart.pos = hart.col, hart.row
+
+
 puerta_arriba = Actor('escaleras-arriba')
+
+
+actors_dictionary = {
+    "player" : { "actor": player, 
+                 "max_hp": 8
+               }
+}
+
+maze_levels = []
 
 
 mapa = Rect(0, 0, COLS * PIXEL_WIDTH_PER_CELL, ROWS * PIXEL_HEIGHT_PER_CELL)
@@ -41,9 +54,10 @@ current_cell_indicatorbox = Rect(0, 0, 200, 100)
 current_cell_indicatorbox.move_ip(100, 100)
 
 def draw():
-    draw_matrix(mapa_nivel)
+    draw_matrix(current_floor)
 
-def draw_matrix(matrix):
+def draw_matrix(level):
+    matrix = maze_levels [level - 1]
     screen.fill('dim grey')
     screen.draw.filled_rect(mapa, 'sky blue')
     screen.draw.filled_rect(current_floor_indicatorbox, 'orange')
@@ -68,18 +82,23 @@ def draw_matrix(matrix):
         x = X_LEFT + col * PIXEL_WIDTH_PER_CELL
         screen.draw.line((x, Y_TOP), (x, HEIGHT - Y_TOP), 'azure')
 
-    hart.x = 300
+   
+    hart.col = 300
+    hart.pos = hart.col, hart.row
     for teller in range(1, max_hp):
         hart.draw() 
-        hart.x += 70
+        hart.col += 70
+        hart.pos = hart.col, hart.row
 
-    draw_player()
+    draw_actor("player")
 
 
-def draw_player():
-    player.pos = (X_LEFT + player.col * PIXEL_WIDTH_PER_CELL - PIXEL_WIDTH_PER_CELL / 2 + player.offset[0], Y_TOP + player.row  * PIXEL_HEIGHT_PER_CELL + player.offset[1])
+def draw_actor(name):
+    thisactor = actors_dictionary[name]["actor"]
 
-    player.draw()
+    thisactor.pos = (X_LEFT + thisactor.col * PIXEL_WIDTH_PER_CELL - PIXEL_WIDTH_PER_CELL / 2 + thisactor.offset[0], Y_TOP + thisactor.row  * PIXEL_HEIGHT_PER_CELL + thisactor.offset[1])
+    thisactor.draw()
+
 
 def on_key_down(key):
     if key == keys.UP:
@@ -114,15 +133,19 @@ def on_key_down(key):
     return
 
 
-def generate_downdoor(m):
+def generate_door(nivel, m, name, sprite):
     r = randrange(9)
     c = randrange(9)
 
-    m[r][c] = puerta_abajo
-    puerta_abajo._surf = pygame.transform.scale(puerta_abajo._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL))
-
-
-    puerta_abajo.move_ip(X_LEFT+r*PIXEL_WIDTH_PER_CELL, Y_TOP + c * PIXEL_HEIGHT_PER_CELL)
+    actorname = name + "_" + str(nivel)
+    actors_dictionary[actorname] = {
+        "actor" : Actor(sprite),
+        "offset" : (0,0)
+    }
+    
+    m[r][c] = actors_dictionary[actorname]["actor"] 
+    actors_dictionary[actorname]["actor"] ._surf = pygame.transform.scale(actors_dictionary[actorname]["actor"] ._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL))
+    actors_dictionary[actorname]["actor"] .move_ip(X_LEFT+r*PIXEL_WIDTH_PER_CELL, Y_TOP + c * PIXEL_HEIGHT_PER_CELL)
 
 def generate_updoor(a):
     r = randrange(9)
@@ -133,24 +156,18 @@ def generate_updoor(a):
 
     a[r][c] = puerta_arriba
 
-def generate_map(rows, cols):
+def generate_map(level, rows, cols):
     Matrix = [[' ' for x in range(cols)] for y in range(rows)]
 
-    generate_downdoor(Matrix)
-    generate_updoor(Matrix)
-        
+    generate_door(level, Matrix, 'abajo', 'escaleras-abajo1')
+    generate_door(level, Matrix, 'arriba', 'escaleras-arriba')
+     
     return Matrix
 
-# def new_floor():
-#     if player.collidepoint(puerta_abajo):
-#     pass
     
 
-
-mapa_nivel = generate_map(10,10)
-
-    
-
+maze_levels.append(generate_map(1, 10,10))
+maze_levels.append(generate_map(2, 10,10))
     
 
 
