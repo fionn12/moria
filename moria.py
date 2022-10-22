@@ -14,8 +14,10 @@ OFFSET_DERECHA = (PIXEL_WIDTH_PER_CELL * 0.5 , -PIXEL_HEIGHT_PER_CELL * 0.5)
 OFFSET_ABAJO = (0, 0)
 OFFSET_ARRIBA = (0, -PIXEL_HEIGHT_PER_CELL)
 OFFSET_IZQUIERDA= (-PIXEL_WIDTH_PER_CELL*0.5, -PIXEL_HEIGHT_PER_CELL * 0.5)
+OFFSET_ZOMBIE = (-55, -50)
 X_LEFT = (WIDTH - COLS * PIXEL_WIDTH_PER_CELL) / 2
 Y_TOP = ( HEIGHT - ROWS * PIXEL_HEIGHT_PER_CELL) / 2
+hit_zombie = False
 
 current_floor = 1
 level = current_floor
@@ -30,6 +32,10 @@ hart.x = 300
 hart.y = 850
 puerta_abajo = Actor('escaleras-abajo1')
 puerta_arriba = Actor('escaleras-arriba')
+zombie = Actor('enemigo1')
+zombie_abajo = Actor('enemigoabajo')
+zombie_derecha = Actor('enemigoderecha')
+zombie_izqiurdo = Actor('enemigoizqiurda')
 
 
 mapa = Rect(0, 0, COLS * PIXEL_WIDTH_PER_CELL, ROWS * PIXEL_HEIGHT_PER_CELL)
@@ -37,6 +43,13 @@ mapa.move_ip(X_LEFT, Y_TOP)
 current_floor_indicatorbox = Rect(0, 0, 200, 100)
 current_floor_indicatorbox.move_ip(400, 100)
 current_cell_indicatorbox = Rect(0, 0, 200, 100)
+current_floor_bob = Rect(0, 0, 200, 100)
+current_floor_bob.move_ip(200, 100)
+
+zombie_x = 0
+zombie_y = 0
+
+
 
 current_cell_indicatorbox.move_ip(100, 100)
 
@@ -49,6 +62,11 @@ def draw_matrix(matrix):
     screen.draw.filled_rect(current_floor_indicatorbox, 'orange')
     screen.draw.textbox('your level is: ' + str(current_floor), current_floor_indicatorbox, color=('black'))
     screen.draw.textbox('Row: ' + str(player.row) + ', col:' + str(player.col), current_cell_indicatorbox, color=('black'))
+    screen.draw.filled_rect(current_floor_bob, 'orange')
+    if hit_zombie:
+        screen.draw.textbox('Hit', current_floor_bob, color='black')
+    else:
+        screen.draw.textbox(str(zombie_x) + '-' + str(zombie_y) + '/' + str(player.col) + '-' + str(player.row), current_floor_bob, color='black')
 
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
@@ -81,6 +99,7 @@ def draw_player():
 
     player.draw()
 
+
 def on_key_down(key):
     if key == keys.UP:
         player.row -= 1
@@ -99,6 +118,12 @@ def on_key_down(key):
         player.image = 'guerrero-abago'
         player.offset = OFFSET_ABAJO
 
+    if zombie_x == player.col and zombie_y == player.row:
+        on_hit()
+
+        
+    
+
     if player.row < 1:
         player.row = 1
         
@@ -111,8 +136,13 @@ def on_key_down(key):
     if player.col >= COLS:
         player.col = COLS
 
+        
     return
 
+def on_hit():
+    global hit_zombie
+    hit_zombie = True
+        
 
 def generate_downdoor(m):
     r = randrange(9)
@@ -133,11 +163,26 @@ def generate_updoor(a):
 
     a[r][c] = puerta_arriba
 
+def generate_zombie(a):
+    global zombie_x, zombie_y
+
+    r = randrange(9)
+    c = randrange(9)
+
+    #zombie._surf = pygame.transform.scale(zombie._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL)) 
+    zombie.move_ip(X_LEFT + c * PIXEL_WIDTH_PER_CELL + OFFSET_ZOMBIE[0], Y_TOP + r * PIXEL_HEIGHT_PER_CELL  + OFFSET_ZOMBIE[1]) 
+
+    #zombie.pos = (r,c)
+    a[c][r] = zombie
+    zombie_x = c
+    zombie_y = r
+
 def generate_map(rows, cols):
     Matrix = [[' ' for x in range(cols)] for y in range(rows)]
 
     generate_downdoor(Matrix)
     generate_updoor(Matrix)
+    generate_zombie(Matrix)
         
     return Matrix
 
