@@ -9,6 +9,7 @@ GUERRERO_IZQUIERDA_ATACA= 'guerrero-attackeizqiurdo1'
 
 COLS = 10
 ROWS = 10
+
 PIXEL_WIDTH_PER_CELL = 50
 PIXEL_HEIGHT_PER_CELL = 50
 HEIGHT = 1000
@@ -17,7 +18,8 @@ OFFSET_DERECHA = (PIXEL_WIDTH_PER_CELL * 0.5 , -PIXEL_HEIGHT_PER_CELL * 0.5)
 OFFSET_ABAJO = (0, 0)
 OFFSET_ARRIBA = (0, -PIXEL_HEIGHT_PER_CELL)
 OFFSET_IZQUIERDA= (-PIXEL_WIDTH_PER_CELL*0.5, -PIXEL_HEIGHT_PER_CELL * 0.5)
-OFFSET_ZOMBIE = (-55, -50)
+#OFFSET_ZOMBIE = (-55, -50)
+OFFSET_ZOMBIE = (-PIXEL_WIDTH_PER_CELL*0.5, -PIXEL_HEIGHT_PER_CELL*0.5)
 X_LEFT = (WIDTH - COLS * PIXEL_WIDTH_PER_CELL) / 2
 Y_TOP = ( HEIGHT - ROWS * PIXEL_HEIGHT_PER_CELL) / 2
 hit_zombie = False
@@ -26,14 +28,19 @@ TURN = 0
 current_floor = 1
 level = current_floor
 max_hp = 8
+current_hp = max_hp
 player = Actor(GUERRERO_IZQUIERDA)
 player.col = 1
 player.row = 1
 player.offset = OFFSET_IZQUIERDA
 hart = Actor('corazon')
+hart_negro = Actor('corazon.malo1')
 hart.pos = hart.x, hart.y
+hart_negro.pos = hart_negro.x, hart_negro.y
 hart.x = 300
 hart.y = 850
+hart_negro.x = 300
+hart_negro.y = 850
 puerta_abajo = Actor('escaleras-abajo1')
 puerta_arriba = Actor('escaleras-arriba')
 zombie = Actor('enemigo1')
@@ -52,13 +59,13 @@ current_floor_indicatorbox.move_ip(400, 100)
 current_cell_indicatorbox = Rect(0, 0, 200, 100)
 current_floor_bob = Rect(0, 0, 200, 100)
 current_floor_bob.move_ip(200, 100)
+current_floor_jeff = Rect(0, 0, 200, 100)
+current_floor_jeff.move_ip(800, 500)
 
 zombie_col = 0
 zombie_row = 0
 zombie_newcol = zombie_col - 1
-zombie_newrow = zombie_row
-
-
+zombie_newrow = zombie_row - 1
 
 current_cell_indicatorbox.move_ip(100, 100)
 
@@ -66,12 +73,15 @@ def draw():
     draw_matrix(mapa_nivel)
 
 def draw_matrix(matrix):
+    global current_hp
     screen.fill('dim grey')
     screen.draw.filled_rect(mapa, 'sky blue')
     screen.draw.filled_rect(current_floor_indicatorbox, 'orange')
     screen.draw.textbox('your level is: ' + str(current_floor), current_floor_indicatorbox, color=('black'))
     screen.draw.textbox('Row: ' + str(player.row) + ', col:' + str(player.col), current_cell_indicatorbox, color=('black'))
     screen.draw.filled_rect(current_floor_bob, 'orange')
+    screen.draw.filled_rect(current_floor_jeff, 'orange')
+    screen.draw.textbox(str(zombie_hp), current_floor_jeff, color='black')
     if hit_zombie:
         screen.draw.textbox('Hit', current_floor_bob, color='black')
     else:
@@ -84,6 +94,9 @@ def draw_matrix(matrix):
                 current_cell.move_ip(X_LEFT+i*PIXEL_WIDTH_PER_CELL, Y_TOP + j * PIXEL_HEIGHT_PER_CELL)
                 screen.draw.textbox(str(matrix[i][j]), current_cell, color=('black'))
             else:
+                matrix[i][j].pos = (0,0)
+                matrix[i][j].move_ip(X_LEFT + i * PIXEL_WIDTH_PER_CELL + OFFSET_ZOMBIE[0], Y_TOP + j * PIXEL_HEIGHT_PER_CELL  + OFFSET_ZOMBIE[1]) 
+                #zombie.move_ip(X_LEFT + c * PIXEL_WIDTH_PER_CELL + OFFSET_ZOMBIE[0], Y_TOP + r * PIXEL_HEIGHT_PER_CELL  + OFFSET_ZOMBIE[1]) 
                 matrix[i][j].draw()            
             
         
@@ -96,9 +109,16 @@ def draw_matrix(matrix):
         screen.draw.line((x, Y_TOP), (x, HEIGHT - Y_TOP), 'azure')
 
     hart.x = 300
+    hart_negro.x = 300
     for teller in range(1, max_hp):
-        hart.draw() 
+        if teller > current_hp:
+            hart_negro.draw()
+        else:
+            hart.draw() 
         hart.x += 70
+        hart_negro.x += 70
+        
+        
 
     draw_player()
 
@@ -178,25 +198,30 @@ def on_key_down(key):
 def calculate_new_zombie_location(px, py, mx, my):
     resultx = mx
     resulty = my
+    deltax = abs(px - mx)
+    deltay = abs(my - py)
+
+    if deltax <= 1 and deltay < 1:
+        monster_melee_attack()
+        return (resultx, resulty)
     
-    if px < mx:
-        resultx -= 1
-        zombie.move_ip(-PIXEL_WIDTH_PER_CELL, 0)
-        return (resultx, resulty)
+    if deltax > deltay:             
+        if px < mx:
+            resultx -= 1
 
-    elif px > mx:
-        resultx += 1
-        zombie.move_ip(PIXEL_WIDTH_PER_CELL, 0)
-        return (resultx, resulty)
+            return (resultx, resulty)
 
-    if py < my:
-        resulty -= 1
-        zombie.move_ip(0, -PIXEL_HEIGHT_PER_CELL)
+        elif px > mx:
+            resultx += 1
+            return (resultx, resulty)
+    
+    else:            
+        if py < my:
+            resulty -= 1
 
-    elif py > my:
-        resulty += 1
-        zombie.move_ip(0, PIXEL_HEIGHT_PER_CELL)
-        
+        elif py > my:
+            resulty += 1
+            
     return (resultx, resulty)
 
 
@@ -219,38 +244,42 @@ def on_hit():
 
     player.row = player.backuprow
     player.col = player.backupcol
-        
+
+def heal_player(number_hp):
+    global current_hp, max_hp
+
+    current_hp += number_hp
+    if current_hp > max_hp:
+        current_hp = max_hp
+    
+
+def monster_melee_attack():
+    global current_hp
+    current_hp -= 1
 
 def generate_downdoor(m):
-    r = randrange(9)
-    c = randrange(9)
+    r = 1 + randrange(9)
+    c = 1 + randrange(9)
 
     m[r][c] = puerta_abajo
     puerta_abajo._surf = pygame.transform.scale(puerta_abajo._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL))
 
 
-    puerta_abajo.move_ip(X_LEFT+r*PIXEL_WIDTH_PER_CELL, Y_TOP + c * PIXEL_HEIGHT_PER_CELL)
 
 def generate_updoor(a):
-    r = randrange(9)
-    c = randrange(9)
+    r = 1 + randrange(9)
+    c = 1 + randrange(9)
 
     puerta_arriba._surf = pygame.transform.scale(puerta_arriba._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL)) 
-    puerta_arriba.move_ip(X_LEFT+r*PIXEL_WIDTH_PER_CELL, Y_TOP + c * PIXEL_HEIGHT_PER_CELL) 
 
     a[r][c] = puerta_arriba
 
 def generate_zombie(a):
     global zombie_col, zombie_row
 
-    r = randrange(9)
-    c = randrange(9)
+    r = 1 + randrange(9)
+    c = 1 + randrange(9)
     
-
-    #zombie._surf = pygame.transform.scale(zombie._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL)) 
-    zombie.move_ip(X_LEFT + c * PIXEL_WIDTH_PER_CELL + OFFSET_ZOMBIE[0], Y_TOP + r * PIXEL_HEIGHT_PER_CELL  + OFFSET_ZOMBIE[1]) 
-
-    #zombie.pos = (r,c)
     a[c][r] = zombie
     zombie_col = c
     zombie_row = r
