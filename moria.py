@@ -1,10 +1,17 @@
+
 import pgzrun
 from random import randint
 from random import randrange
 import pygame
 
 GUERRERO_IZQUIERDA = 'guerrero-izqiureda4'
-GUERRERO_IZQUIERDA_ATACA= 'guerrero-attackeizqiurdo1'
+GUERRERO_IZQUIERDA_ATACA = 'guerrero-attackeizqiurdo1'
+
+zombie_arriba = 'enemigo1'
+zombie_abajo = 'enemigoabajo2'
+zombie_derecha = 'enemigoderecha2'
+zombie_izqiurdo = 'enemigoizqiurda2'
+
 
 
 COLS = 10
@@ -43,10 +50,7 @@ hart_negro.x = 300
 hart_negro.y = 850
 puerta_abajo = Actor('escaleras-abajo1')
 puerta_arriba = Actor('escaleras-arriba')
-zombie = Actor('enemigo1')
-zombie_abajo = Actor('enemigoabajo')
-zombie_derecha = Actor('enemigoderecha')
-zombie_izqiurdo = Actor('enemigoizqiurda')
+zombie = Actor(zombie_arriba)
 zombie_hp = 3
 player.backuprow = player.row
 player.backupcol = player.col
@@ -146,7 +150,6 @@ def on_key_down(key):
         player.image = 'guerrero-1bien'
         player.offset = OFFSET_ARRIBA
         increase_turn = True
-        
     elif key == keys.RIGHT:
         player.col += 1
         player.image = 'guerrero-derecha3'
@@ -168,13 +171,15 @@ def on_key_down(key):
       TURN += 1
       if zombie_col == player.col and zombie_row == player.row:
         on_hit()
+        
       #monster_turn
-      new_zombie_position = calculate_new_zombie_location(player.col, player.row, zombie_col, zombie_row)
-      mapa_nivel[new_zombie_position[0]][new_zombie_position[1]] = mapa_nivel[zombie_col][zombie_row]
-      mapa_nivel[zombie_col][zombie_row] = ' '
-      
-      zombie_col = new_zombie_position[0]
-      zombie_row = new_zombie_position[1]
+      if es_impar(TURN):
+          new_zombie_position = calculate_new_zombie_location(player.col, player.row, zombie_col, zombie_row)
+          mapa_nivel[new_zombie_position[0]][new_zombie_position[1]] = mapa_nivel[zombie_col][zombie_row]
+          mapa_nivel[zombie_col][zombie_row] = ' '
+          
+          zombie_col = new_zombie_position[0]
+          zombie_row = new_zombie_position[1]
       
         
     
@@ -195,7 +200,14 @@ def on_key_down(key):
 
   
 
+def es_impar(n):
+    if int(n / 2) * 2 == n:
+        return False
+    return True
+        
+
 def calculate_new_zombie_location(px, py, mx, my):
+    global zombie
     resultx = mx
     resulty = my
     deltax = abs(px - mx)
@@ -203,24 +215,31 @@ def calculate_new_zombie_location(px, py, mx, my):
 
     if deltax <= 1 and deltay < 1:
         monster_melee_attack()
+        
         return (resultx, resulty)
     
+
     if deltax > deltay:             
         if px < mx:
             resultx -= 1
+            zombie.image = zombie_izqiurdo
 
             return (resultx, resulty)
 
         elif px > mx:
             resultx += 1
+            zombie.image = zombie_derecha
             return (resultx, resulty)
     
     else:            
         if py < my:
             resulty -= 1
-
+            zombie.image = zombie_arriba
+            
         elif py > my:
             resulty += 1
+            zombie.image = zombie_abajo
+            
             
     return (resultx, resulty)
 
@@ -256,6 +275,8 @@ def heal_player(number_hp):
 def monster_melee_attack():
     global current_hp
     current_hp -= 1
+
+    
 
 def generate_downdoor(m):
     r = 1 + randrange(9)
