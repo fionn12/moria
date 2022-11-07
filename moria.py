@@ -37,11 +37,14 @@ level = current_floor
 max_hp = 8
 current_hp = max_hp
 player = Actor(GUERRERO_IZQUIERDA)
+player.actor_type = 'player'
 player.col = 1
 player.row = 1
 player.offset = OFFSET_IZQUIERDA
 hart = Actor('corazon')
+hart.actor_type = 'heart'
 hart_negro = Actor('corazon.malo1')
+hart_negro.actor_type = 'heart'
 hart.pos = hart.x, hart.y
 hart_negro.pos = hart_negro.x, hart_negro.y
 hart.x = 300
@@ -49,11 +52,14 @@ hart.y = 850
 hart_negro.x = 300
 hart_negro.y = 850
 puerta_abajo = Actor('escaleras-abajo1')
+puerta_abajo.actor_type = 'puerta'
 puerta_arriba = Actor('escaleras-arriba')
+puerta_arriba.actor_type = 'puerta'
 zombie = Actor(zombie_arriba)
 zombie_hp = 3
 zombie.backuprow = player.row
 zombie.backupcol = player.col
+zombie.actor_type= 'monster_zombie'
 
 
 mapa = Rect(0, 0, COLS * PIXEL_WIDTH_PER_CELL, ROWS * PIXEL_HEIGHT_PER_CELL)
@@ -102,8 +108,10 @@ def draw_matrix(matrix):
                 screen.draw.textbox(str(matrix[i][j]), current_cell, color=('black'))
             else:
                 matrix[i][j].pos = (0,0)
-                matrix[i][j].move_ip(X_LEFT + i * PIXEL_WIDTH_PER_CELL + OFFSET_ZOMBIE[0], Y_TOP + j * PIXEL_HEIGHT_PER_CELL  + OFFSET_ZOMBIE[1]) 
-                #zombie.move_ip(X_LEFT + c * PIXEL_WIDTH_PER_CELL + OFFSET_ZOMBIE[0], Y_TOP + r * PIXEL_HEIGHT_PER_CELL  + OFFSET_ZOMBIE[1]) 
+                if matrix[i][j].actor_type =='monster_zombie':
+                   matrix[i][j].move_ip(X_LEFT + i * PIXEL_WIDTH_PER_CELL + OFFSET_ZOMBIE[0], Y_TOP + j * PIXEL_HEIGHT_PER_CELL  + OFFSET_ZOMBIE[1]) 
+                else:
+                   matrix[i][j].move_ip(X_LEFT + (i +1) * PIXEL_WIDTH_PER_CELL + OFFSET_ZOMBIE[0], Y_TOP + (j+2) * PIXEL_HEIGHT_PER_CELL  + OFFSET_ZOMBIE[1]) 
                 matrix[i][j].draw()            
             
         
@@ -214,13 +222,13 @@ def es_impar(n):
         
 
 def calculate_new_zombie_location(px, py, mx, my):
-    global zombie
+    global zombie,zombie_backup_row, zombie_backup_col, zombie_col, zombie_row
     resultx = mx
     resulty = my
     deltax = abs(px - mx)
     deltay = abs(my - py)
-    zombie.backup_col = zombie_col
-    zombie.backup_row = zombie_row
+    zombie_backup_col = zombie_col
+    zombie_backup_row = zombie_row
 
     if deltax <= 1 and deltay < 1:
         monster_melee_attack()        
@@ -247,6 +255,8 @@ def calculate_new_zombie_location(px, py, mx, my):
             zombie.image = zombie_abajo
 
     if zombie_col == player.col and zombie_row == player.row:
+        zombie_col = zombie_backup_col
+        zombie_row = zombie_backup_row
         return (mx, my)
             
             
@@ -291,22 +301,22 @@ def monster_melee_attack():
 
     
 
-def generate_downdoor(m):
+def generate_downdoor(a):
     r = 1 + randrange(9)
     c = 1 + randrange(9)
 
-    m[r][c] = puerta_abajo
+    a[r][c] = puerta_abajo
     puerta_abajo._surf = pygame.transform.scale(puerta_abajo._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL))
 
 
 
-def generate_updoor(a):
+def generate_updoor(m):
     r = 1 + randrange(9)
     c = 1 + randrange(9)
 
     puerta_arriba._surf = pygame.transform.scale(puerta_arriba._surf, (PIXEL_WIDTH_PER_CELL, PIXEL_HEIGHT_PER_CELL)) 
 
-    a[r][c] = puerta_arriba
+    m[r][c] = puerta_arriba
 
 def generate_zombie(a):
     global zombie_col, zombie_row
