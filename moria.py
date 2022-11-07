@@ -52,8 +52,8 @@ puerta_abajo = Actor('escaleras-abajo1')
 puerta_arriba = Actor('escaleras-arriba')
 zombie = Actor(zombie_arriba)
 zombie_hp = 3
-player.backuprow = player.row
-player.backupcol = player.col
+zombie.backuprow = player.row
+zombie.backupcol = player.col
 
 
 mapa = Rect(0, 0, COLS * PIXEL_WIDTH_PER_CELL, ROWS * PIXEL_HEIGHT_PER_CELL)
@@ -70,8 +70,11 @@ zombie_col = 0
 zombie_row = 0
 zombie_newcol = zombie_col - 1
 zombie_newrow = zombie_row - 1
+zombie.backup_col = 0
+zombie.backup_row = 0
 
-current_cell_indicatorbox.move_ip(100, 100)
+
+current_cell_indicatorbox.move_ip(0, 100)
 
 def draw():
     draw_matrix(mapa_nivel)
@@ -81,15 +84,15 @@ def draw_matrix(matrix):
     screen.fill('dim grey')
     screen.draw.filled_rect(mapa, 'sky blue')
     screen.draw.filled_rect(current_floor_indicatorbox, 'orange')
-    screen.draw.textbox('your level is: ' + str(current_floor), current_floor_indicatorbox, color=('black'))
-    screen.draw.textbox('Row: ' + str(player.row) + ', col:' + str(player.col), current_cell_indicatorbox, color=('black'))
+    screen.draw.textbox('turn ' + str(TURN), current_floor_indicatorbox, color=('black'))
+    screen.draw.textbox(str(player.col) + ',' + str(player.row), current_cell_indicatorbox, color=('black'))
     screen.draw.filled_rect(current_floor_bob, 'orange')
     screen.draw.filled_rect(current_floor_jeff, 'orange')
     screen.draw.textbox(str(zombie_hp), current_floor_jeff, color='black')
-    if hit_zombie:
-        screen.draw.textbox('Hit', current_floor_bob, color='black')
-    else:
-        screen.draw.textbox(str(TURN) + ' ' + str(zombie_col) + 'z' + str(zombie_row), current_floor_bob, color='black')
+    #if hit_zombie:
+        #screen.draw.textbox('Hit', current_floor_bob, color='black')
+    #else:
+    screen.draw.textbox(str(zombie_col) + ':' + str(zombie_row), current_floor_bob, color='black')
 
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
@@ -129,16 +132,13 @@ def draw_matrix(matrix):
 
 def draw_player():
     player.pos = (X_LEFT + player.col * PIXEL_WIDTH_PER_CELL - PIXEL_WIDTH_PER_CELL / 2 + player.offset[0], Y_TOP + player.row  * PIXEL_HEIGHT_PER_CELL + player.offset[1])
-
     player.draw()
 
 
 
 
 def on_key_down(key):
-    global TURN
-    global zombie_col
-    global zombie_row, mapa_nivel
+    global TURN, zombie_col, zombie_row, mapa_nivel
     increase_turn = False
 
     player.backuprow = player.row
@@ -165,28 +165,28 @@ def on_key_down(key):
         player.image = 'guerrero-abago'
         player.offset = OFFSET_ABAJO
         increase_turn = True
-       
 
+    
     if increase_turn == True:
       TURN += 1
       if zombie_col == player.col and zombie_row == player.row:
+        player.row = player.backuprow
+        player.col= player.backupcol
         on_hit()
         
       #monster_turn
       if es_impar(TURN):
           new_zombie_position = calculate_new_zombie_location(player.col, player.row, zombie_col, zombie_row)
-          mapa_nivel[new_zombie_position[0]][new_zombie_position[1]] = mapa_nivel[zombie_col][zombie_row]
-          mapa_nivel[zombie_col][zombie_row] = ' '
-          
-          zombie_col = new_zombie_position[0]
-          zombie_row = new_zombie_position[1]
+          move_zombie(zombie_col, zombie_row, new_zombie_position[0], new_zombie_position[1])
+         
       
         
     
 
     if player.row < 1:
         player.row = 1
-        increase_turn = False        
+        increase_turn = False
+        
     if player.row >= ROWS:
 
         player.row = ROWS
@@ -198,7 +198,14 @@ def on_key_down(key):
         player.col = COLS
         increase_turn = False
 
-  
+def move_zombie(fromCol, fromRow, toCol, toRow):
+    global mapa_nivel, zombie_col, zombie_row
+    mapa_nivel[toCol][toRow] = mapa_nivel[fromCol][fromRow]
+    mapa_nivel[fromCol][fromRow] = ' '
+          
+    zombie_col = toCol
+    zombie_row = toRow
+
 
 def es_impar(n):
     if int(n / 2) * 2 == n:
@@ -212,10 +219,11 @@ def calculate_new_zombie_location(px, py, mx, my):
     resulty = my
     deltax = abs(px - mx)
     deltay = abs(my - py)
+    zombie.backup_col = zombie_col
+    zombie.backup_row = zombie_row
 
     if deltax <= 1 and deltay < 1:
-        monster_melee_attack()
-        
+        monster_melee_attack()        
         return (resultx, resulty)
     
 
@@ -223,7 +231,6 @@ def calculate_new_zombie_location(px, py, mx, my):
         if px < mx:
             resultx -= 1
             zombie.image = zombie_izqiurdo
-
             return (resultx, resulty)
 
         elif px > mx:
@@ -235,14 +242,20 @@ def calculate_new_zombie_location(px, py, mx, my):
         if py < my:
             resulty -= 1
             zombie.image = zombie_arriba
-            
         elif py > my:
             resulty += 1
             zombie.image = zombie_abajo
+
+    if zombie_col == player.col and zombie_row == player.row:
+        return (mx, my)
             
             
     return (resultx, resulty)
 
+#def on_zombie_hit():
+#    global zombie_col, zombie_row, zombie.backup_col, zombie.backup_row
+#    move_zombie(zombie_col, zombie_row, zombie.backup_col, zombie.backup_row)
+    
 
 def on_hit():
     global hit_zombie
