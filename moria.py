@@ -1,5 +1,6 @@
 
 import pgzrun
+from math import sqrt
 from random import randint
 from random import randrange
 import pygame
@@ -50,7 +51,7 @@ hart_negro.pos = hart_negro.x, hart_negro.y
 hart.x = 300
 hart.y = 850
 hart_negro.x = 300
-hart_negro.y = 850
+hart_negro.y = 800
 puerta_abajo = Actor('escaleras-abajo1')
 puerta_abajo.actor_type = 'puerta'
 puerta_arriba = Actor('escaleras-arriba')
@@ -95,10 +96,10 @@ def draw_matrix(matrix):
     screen.draw.filled_rect(current_floor_bob, 'orange')
     screen.draw.filled_rect(current_floor_jeff, 'orange')
     screen.draw.textbox(str(zombie_hp), current_floor_jeff, color='black')
-    #if hit_zombie:
-        #screen.draw.textbox('Hit', current_floor_bob, color='black')
-    #else:
-    screen.draw.textbox(str(zombie_col) + ':' + str(zombie_row), current_floor_bob, color='black')
+    if hit_zombie:
+        screen.draw.textbox('Hit', current_floor_bob, color='black')
+    else:
+        screen.draw.textbox(str(zombie_col) + ':' + str(zombie_row), current_floor_bob, color='black')
 
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
@@ -184,8 +185,10 @@ def on_key_down(key):
         
       #monster_turn
       if es_impar(TURN):
-          new_zombie_position = calculate_new_zombie_location(player.col, player.row, zombie_col, zombie_row)
-          move_zombie(zombie_col, zombie_row, new_zombie_position[0], new_zombie_position[1])
+          d = distance(player.col, player.row, zombie_col, zombie_row)
+          if d > 1:
+              new_zombie_position = calculate_new_zombie_location(player.col, player.row, zombie_col, zombie_row)
+              move_zombie(zombie_col, zombie_row, new_zombie_position[0], new_zombie_position[1])
          
       
         
@@ -206,11 +209,18 @@ def on_key_down(key):
         player.col = COLS
         increase_turn = False
 
+def distance(player_col, player_row, zombie_col, zombie_row):
+    dformula = ((player.col - zombie_col) * (player.col - zombie_col)) + ((player.row - zombie_row) * (player.row - zombie_row))
+    d = sqrt(dformula)
+    return d
+
+    
+
 def move_zombie(fromCol, fromRow, toCol, toRow):
     global mapa_nivel, zombie_col, zombie_row
     mapa_nivel[toCol][toRow] = mapa_nivel[fromCol][fromRow]
     mapa_nivel[fromCol][fromRow] = ' '
-          
+              
     zombie_col = toCol
     zombie_row = toRow
 
@@ -344,11 +354,6 @@ def generate_map(rows, cols):
 
 
 mapa_nivel = generate_map(10,10)
-
-    
-
-    
-
 
 pgzrun.go()
 
