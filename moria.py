@@ -1,4 +1,5 @@
 
+
 import pgzrun
 from math import sqrt
 from random import randint
@@ -49,7 +50,7 @@ hart_negro.actor_type = 'heart'
 hart.pos = hart.x, hart.y
 hart_negro.pos = hart_negro.x, hart_negro.y
 hart.x = 300
-hart.y = 850
+hart.y = 800
 hart_negro.x = 300
 hart_negro.y = 800
 puerta_abajo = Actor('escaleras-abajo1')
@@ -184,12 +185,10 @@ def on_key_down(key):
         on_hit()
         
       #monster_turn
-      if es_impar(TURN):
-          d = distance(player.col, player.row, zombie_col, zombie_row)
-          if d > 1:
-              new_zombie_position = calculate_new_zombie_location(player.col, player.row, zombie_col, zombie_row)
-              move_zombie(zombie_col, zombie_row, new_zombie_position[0], new_zombie_position[1])
-         
+      if es_impar(TURN) and can_move_zombie == True:
+          monsterTurn(player, zombie_col, zombie_row)
+
+           
       
         
     
@@ -209,12 +208,27 @@ def on_key_down(key):
         player.col = COLS
         increase_turn = False
 
+
+def monsterTurn(player, zombie_col, zombie_row):
+    d = distance(player.col, player.row, zombie_col, zombie_row)
+    if d > 1:
+        new_zombie_position = calculate_new_zombie_location(player.col, player.row, zombie_col, zombie_row)
+        move_zombie(zombie_col, zombie_row, new_zombie_position[0], new_zombie_position[1])
+            
+
+
 def distance(player_col, player_row, zombie_col, zombie_row):
     dformula = ((player.col - zombie_col) * (player.col - zombie_col)) + ((player.row - zombie_row) * (player.row - zombie_row))
     d = sqrt(dformula)
     return d
 
     
+
+def can_move_zombie(toCol, toRow):
+    global mapa_nivel, zombie_col, zombie_row
+    if mapa_nivel[toCol][toRow] == puerta_abajo or mapa_nivel[toCol][toRow] == puerta_arriba:
+        return False
+    return True
 
 def move_zombie(fromCol, fromRow, toCol, toRow):
     global mapa_nivel, zombie_col, zombie_row
@@ -233,6 +247,9 @@ def es_impar(n):
 
 def calculate_new_zombie_location(px, py, mx, my):
     global zombie,zombie_backup_row, zombie_backup_col, zombie_col, zombie_row
+
+    movement_options = []
+
     resultx = mx
     resulty = my
     deltax = abs(px - mx)
@@ -240,27 +257,68 @@ def calculate_new_zombie_location(px, py, mx, my):
     zombie_backup_col = zombie_col
     zombie_backup_row = zombie_row
 
+    prio_derecha = 0
+    prio_izquierda = 0
+    prio_arriba = 0
+    prio_abajo = 0
+
     if deltax <= 1 and deltay < 1:
         monster_melee_attack()        
         return (resultx, resulty)
-    
 
     if deltax > deltay:             
         if px < mx:
+            prio_izquierda = 1
+            prio_derecha = 4
+
+            if deltay > 0:
+                prio_abajo = 2
+                prio_arriba = 3
+            else:
+                prio_abajo = 3
+                prio_arriba =2
+                
             resultx -= 1
             zombie.image = zombie_izqiurdo
             return (resultx, resulty)
 
         elif px > mx:
+            prio_derecha = 1
+            prio_izquierda = 4
+
+            if deltay < 0:
+                prio_arriba = 3
+                prio_abajo = 2
+            else:
+                prio_arriba = 2
+                prio_abajo = 3
             resultx += 1
             zombie.image = zombie_derecha
             return (resultx, resulty)
     
     else:            
         if py < my:
+            prio_arriba = 1
+            prio_abajo = 4
+
+            if deltax < 0:
+                prio_derecha = 2
+                prio_izquierda = 3
+            else:
+                prio_izquierda = 3
+                prio_derecha = 2
             resulty -= 1
             zombie.image = zombie_arriba
         elif py > my:
+            prio_arriba = 4
+            prio_abajo = 1
+
+            if deltax > 0:
+                prio_derecha = 3
+                prio_izquierda = 2
+            else:
+                prio_izquierda = 2
+                prio_derecha = 3
             resulty += 1
             zombie.image = zombie_abajo
 
@@ -278,7 +336,7 @@ def calculate_new_zombie_location(px, py, mx, my):
     
 
 def on_hit():
-    global hit_zombie
+    global hit_zombie, zombie_hp
 
     hit_zombie = True
     
@@ -296,6 +354,9 @@ def on_hit():
 
     player.row = player.backuprow
     player.col = player.backupcol
+    zombie_hp -= 1
+    if zombie_hp == 0:
+        zombie.kill()
 
 def heal_player(number_hp):
     global current_hp, max_hp
